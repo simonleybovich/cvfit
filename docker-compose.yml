@@ -1,0 +1,20 @@
+# Local dev Postgres for the app's own data (Fase 3 historial). Not used for
+# Supabase Auth — that identity data lives in Supabase's hosted project, this
+# is only for the self-hosted `AnalysisHistory` table (see prisma/schema.prisma
+# and spec.md section 6/12). In production this becomes a VPS-hosted Postgres
+# alongside the rest of the app's infra, same pattern.
+services:
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: cvfit
+      POSTGRES_PASSWORD: cvfit
+      POSTGRES_DB: cvfit
+    ports:
+      - "5432:5432"
+    volumes:
+      - cvfit_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  cvfit_postgres_data:

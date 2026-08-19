@@ -1,0 +1,48 @@
+// Prisma pinned to the 6.x line rather than the just-released 7.x (see
+// package.json / spec.md deviation note): Prisma 7 makes driver adapters
+// mandatory and is already iterating fast (8.0.0-rc.x published within days
+// of 7.0), which is more churn than this scope needs. 6.x is the last line
+// with the classic engine — connects straight off DATABASE_URL, no adapter
+// package required.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Fase 3 historial (spec.md section 5). Originally scoped as just "JD, score,
+// fecha", widened at Simon's explicit request to store the full analysis
+// result (matchScoreExplanation/keywordsFound/keywordsMissing/suggestions) so
+// /historial can show a past analysis without re-calling Gemini — see spec.md
+// section 5 deviation note. Widened a second time to optionally also store
+// the generated/optimized CV (see generatedCv below and spec.md section 5).
+// Still never stores the CV file or its extracted text (spec.md section 10
+// hard rule, unchanged). `userId` is the Supabase
+// auth user's UUID (JWT `sub` claim), stored as a plain reference: there is
+// no foreign key into a local `User` table because user identity lives in
+// Supabase, not in this database (see spec.md section 6 auth note).
+model AnalysisHistory {
+  id             String   @id @default(cuid())
+  userId         String
+  jobDescription String   @db.Text
+  matchScore     Int
+  // Full AnalysisResult (domain/cv-analysis/types.ts) as jsonb — read-only
+  // display data for /historial, not queried/filtered on, so a single Json
+  // column is simpler than normalizing keywords/suggestions into tables.
+  // matchScore stays its own column too (kept for the userId+createdAt index
+  // and any future sort-by-score query) even though it's also inside this blob.
+  analysisResult Json
+  // Optional GeneratedCv (domain/cv-generation/types.ts), same rationale as
+  // analysisResult above. Nullable: "Guardar en mi historial" is available
+  // right after analysis, before the user necessarily clicks "Generar CV
+  // optimizado" — not every saved entry has a rewrite attached. Still never
+  // the CV file or its extracted text (spec.md section 10, unchanged); this
+  // is the AI's derived/rewritten output, not the original upload.
+  generatedCv    Json?
+  createdAt      DateTime @default(now())
+
+  @@index([userId, createdAt])
+}

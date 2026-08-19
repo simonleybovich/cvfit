@@ -1,12 +1,15 @@
 import { ShieldCheck } from "lucide-react";
 
 import { AnalyzeForm } from "@/components/analyze/analyze-form";
+import { getCurrentUser } from "@/infrastructure/auth/supabase-server-client";
 
-export default function Home() {
+export default async function Home() {
+  const user = await getCurrentUser();
+
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-10 px-4 py-12 sm:py-16">
       <header className="flex flex-col gap-4 text-center">
-        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+        <h1 className="font-heading text-3xl font-semibold tracking-tight sm:text-4xl">
           ¿Qué tan bien matchea tu CV con esa vacante?
         </h1>
         <p className="text-balance text-muted-foreground sm:text-lg">
@@ -23,7 +26,7 @@ export default function Home() {
         </div>
       </header>
 
-      <AnalyzeForm />
+      <AnalyzeForm isSignedIn={user !== null} />
 
       <footer className="mt-4 text-center text-xs text-muted-foreground">
         Los resultados son una estimación generada por IA, no un puntaje oficial de ningún sistema

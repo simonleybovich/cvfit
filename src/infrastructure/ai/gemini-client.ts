@@ -5,13 +5,16 @@ import { GoogleGenAI } from "@google/genai";
 import { AiServiceError, AiServiceUnavailableError } from "@/domain/cv-analysis/errors";
 
 /**
- * Latest stable Gemini Flash model at the time of writing — suited for
- * bounded classification/extraction tasks like this one. Shared by every
- * structured-output flow (analysis, generation): re-check
- * https://ai.google.dev/gemini-api/docs/models before bumping: avoid preview
- * or EOL model ids.
+ * gemini-3.7-flash repeatedly hit sustained 503 "high demand" capacity
+ * errors on /api/generate's larger structured-output requests. Tried falling
+ * back to gemini-2.5-flash, but it's account-gated: the API rejects it with
+ * 404 "no longer available to new users" even though it still appears in
+ * the model list — being listed doesn't mean this account can call it.
+ * gemini-3.6-flash is Google's own suggested replacement in that error and
+ * is confirmed callable on this account. Shared by every structured-output
+ * flow (analysis, generation).
  */
-const GEMINI_MODEL = "gemini-3.7-flash";
+const GEMINI_MODEL = "gemini-3.6-flash";
 
 let cachedClient: GoogleGenAI | null = null;
 

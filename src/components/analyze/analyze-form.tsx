@@ -1,7 +1,9 @@
 "use client";
 
 import { FileCheck2, Loader2, TriangleAlert, Upload } from "lucide-react";
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+
+import { REUSE_JD_STORAGE_KEY } from "@/lib/reuse-jd-storage-key";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -9,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { GenerateCvPanel } from "@/components/generate/generate-cv-panel";
+import { SaveHistoryButton } from "@/components/analyze/save-history-button";
 
 import type { AnalysisResult } from "@/domain/cv-analysis/types";
 import {
@@ -17,6 +20,7 @@ import {
   resolveCvFileKind,
   validateCvFileSize,
 } from "@/domain/cv-analysis/validation";
+import type { GeneratedCv } from "@/domain/cv-generation/types";
 
 import { AnalysisResults } from "./analysis-results";
 
@@ -24,7 +28,11 @@ const MAX_FILE_SIZE_MB = MAX_CV_FILE_SIZE_BYTES / (1024 * 1024);
 
 type SubmitState = "idle" | "loading" | "error";
 
-export function AnalyzeForm() {
+interface AnalyzeFormProps {
+  isSignedIn: boolean;
+}
+
+export function AnalyzeForm({ isSignedIn }: AnalyzeFormProps) {
   const fileInputId = useId();
   const jobDescriptionId = useId();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -35,10 +43,27 @@ export function AnalyzeForm() {
   const [submitState, setSubmitState] = useState<SubmitState>("idle");
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [result, setResult] = useState<AnalysisResult | null>(null);
+  // Lifted out of GenerateCvPanel so SaveHistoryButton can include it when
+  // present — the user may generate a CV before or after saving the analysis.
+  const [generatedCv, setGeneratedCv] = useState<GeneratedCv | null>(null);
+
+  // Prefills the JD when arriving from "Reutilizar" on /historial — we never
+  // persist the CV itself, so only the job description can be carried over.
+  useEffect(() => {
+    const reusedJobDescription = sessionStorage.getItem(REUSE_JD_STORAGE_KEY);
+    if (reusedJobDescription) {
+      // sessionStorage is only readable client-side — a lazy useState
+      // initializer would mismatch the server-rendered empty textarea.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setJobDescription(reusedJobDescription);
+      sessionStorage.removeItem(REUSE_JD_STORAGE_KEY);
+    }
+  }, []);
 
   function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0] ?? null;
     setResult(null);
+    setGeneratedCv(null);
     setSubmitError(null);
 
     if (!file) {
@@ -71,6 +96,7 @@ export function AnalyzeForm() {
     setSubmitState("loading");
     setSubmitError(null);
     setResult(null);
+    setGeneratedCv(null);
 
     try {
       const formData = new FormData();
@@ -192,8 +218,17 @@ export function AnalyzeForm() {
 
       {result && <AnalysisResults result={result} />}
 
+      {result && isSignedIn && (
+        <SaveHistoryButton jobDescription={jobDescription} result={result} generatedCv={generatedCv} />
+      )}
+
       {result && selectedFile && (
-        <GenerateCvPanel cvFile={selectedFile} jobDescription={jobDescription} analysis={result} />
+        <GenerateCvPanel
+          cvFile={selectedFile}
+          jobDescription={jobDescription}
+          analysis={result}
+          onGenerated={setGeneratedCv}
+        />
       )}
     </div>
   );
