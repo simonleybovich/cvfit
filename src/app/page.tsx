@@ -1,15 +1,39 @@
-import { ShieldCheck } from "lucide-react";
+import { FileUp, ListChecks, ScanSearch, ShieldCheck } from "lucide-react";
 
 import { AnalyzeForm } from "@/components/analyze/analyze-form";
 import { SignInMenu } from "@/components/auth/sign-in-menu";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCurrentUser } from "@/infrastructure/auth/supabase-server-client";
+import { cn } from "@/lib/utils";
+
+const HOW_IT_WORKS = [
+  {
+    icon: FileUp,
+    title: "Subí tu CV y la vacante",
+    description: "PDF o DOCX, más el texto de la publicación del puesto.",
+  },
+  {
+    icon: ScanSearch,
+    title: "Recibí un análisis al instante",
+    description: "Score de compatibilidad y keywords que le faltan a tu CV.",
+  },
+  {
+    icon: ListChecks,
+    title: "Mejorá tu CV con sugerencias",
+    description: "Recomendaciones concretas, sección por sección.",
+  },
+];
 
 export default async function Home() {
   const user = await getCurrentUser();
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-10 px-4 py-12 sm:py-16">
+    <main
+      className={cn(
+        "mx-auto flex w-full max-w-3xl flex-1 flex-col gap-10 px-4 py-12 sm:py-16",
+        !user && "justify-center gap-8",
+      )}
+    >
       <header className="flex flex-col gap-4 text-center">
         <h1 className="font-heading text-3xl font-semibold tracking-tight sm:text-4xl">
           ¿Qué tan bien matchea tu CV con esa vacante?
@@ -31,19 +55,31 @@ export default async function Home() {
       {user ? (
         <AnalyzeForm isSignedIn />
       ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle>Iniciá sesión para analizar tu CV</CardTitle>
-            <CardDescription>
-              Para controlar el uso de la IA, analizar o generar un CV requiere estar logueado.
-              Igual que el resto de la app, tu CV nunca se guarda salvo que vos lo pidas
-              explícitamente desde tu historial.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <SignInMenu />
-          </CardContent>
-        </Card>
+        <div className="flex flex-col gap-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Iniciá sesión para analizar tu CV</CardTitle>
+              <CardDescription>
+                Para controlar el uso de la IA, analizar o generar un CV requiere estar logueado.
+                Igual que el resto de la app, tu CV nunca se guarda salvo que vos lo pidas
+                explícitamente desde tu historial.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <SignInMenu />
+            </CardContent>
+          </Card>
+
+          <ul className="mx-auto grid w-full max-w-xl gap-5 sm:grid-cols-3">
+            {HOW_IT_WORKS.map(({ icon: Icon, title, description }) => (
+              <li key={title} className="flex flex-col items-center gap-1.5 text-center">
+                <Icon className="size-5 text-primary" />
+                <p className="text-sm font-medium">{title}</p>
+                <p className="text-sm text-muted-foreground">{description}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
 
       <footer className="mt-4 flex flex-col items-center gap-4 text-center text-xs text-muted-foreground">
