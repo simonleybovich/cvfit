@@ -2,12 +2,16 @@ import { NextResponse } from "next/server";
 
 import { deleteAnalysisHistoryUseCase } from "@/application/delete-analysis-history-usecase";
 import { HistoryEntryNotFoundError, UnauthenticatedError } from "@/domain/history/errors";
+import { getCurrentUser } from "@/infrastructure/auth/supabase-server-client";
 import { getClientIp } from "@/lib/get-client-ip";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { checkRequestRateLimit } from "@/lib/rate-limit";
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const clientIp = getClientIp(request);
-  const rateLimit = checkRateLimit(clientIp);
+  // getCurrentUser() is cache()-wrapped — deleteAnalysisHistoryUseCase's own
+  // auth check reuses this same call within the request.
+  const user = await getCurrentUser();
+  const rateLimit = checkRequestRateLimit(clientIp, user?.id);
   if (!rateLimit.allowed) {
     return NextResponse.json(
       { error: "Hiciste demasiadas solicitudes. Esperá un momento antes de volver a intentarlo." },

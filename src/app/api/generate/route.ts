@@ -10,8 +10,9 @@ import {
   InvalidFileTypeError,
   UnauthenticatedError,
 } from "@/domain/cv-analysis/errors";
+import { getCurrentUser } from "@/infrastructure/auth/supabase-server-client";
 import { getClientIp } from "@/lib/get-client-ip";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { checkRequestRateLimit } from "@/lib/rate-limit";
 
 // pdf-parse and mammoth need Node APIs (Buffer, fs internals) — this route
 // cannot run on the Edge runtime.
@@ -19,7 +20,10 @@ export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   const clientIp = getClientIp(request);
-  const rateLimit = checkRateLimit(clientIp);
+  // getCurrentUser() is cache()-wrapped — generateCvUseCase's own auth check
+  // reuses this same call within the request, no extra Supabase round trip.
+  const user = await getCurrentUser();
+  const rateLimit = checkRequestRateLimit(clientIp, user?.id);
   if (!rateLimit.allowed) {
     return NextResponse.json(
       { error: "Hiciste demasiadas solicitudes. Esperá un momento antes de volver a intentarlo." },

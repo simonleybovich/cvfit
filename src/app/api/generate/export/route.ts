@@ -7,7 +7,7 @@ import { generateCvDocx } from "@/infrastructure/generation/docx-generator";
 import { generateCvPdf } from "@/infrastructure/generation/pdf-generator";
 import { generateCvTypst } from "@/infrastructure/generation/typst-generator";
 import { getClientIp } from "@/lib/get-client-ip";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { checkRequestRateLimit } from "@/lib/rate-limit";
 
 // The `docx` package's Packer relies on Node APIs (Buffer, zip internals) —
 // this route cannot run on the Edge runtime.
@@ -48,7 +48,8 @@ function parseExportFormat(value: unknown): ExportFormat {
  */
 export async function POST(request: Request) {
   const clientIp = getClientIp(request);
-  const rateLimit = checkRateLimit(clientIp);
+  const user = await getCurrentUser();
+  const rateLimit = checkRequestRateLimit(clientIp, user?.id);
   if (!rateLimit.allowed) {
     return NextResponse.json(
       { error: "Hiciste demasiadas solicitudes. Esperá un momento antes de volver a intentarlo." },
@@ -59,7 +60,6 @@ export async function POST(request: Request) {
     );
   }
 
-  const user = await getCurrentUser();
   if (!user) {
     return NextResponse.json({ error: "Iniciá sesión para descargar el CV generado." }, { status: 401 });
   }

@@ -36,6 +36,25 @@ export interface RateLimitResult {
   retryAfterSeconds?: number;
 }
 
+/**
+ * Checks both the IP-scoped and (when authenticated) user-scoped limits
+ * independently, returning whichever is exceeded first. IP-only was enough
+ * while every request was anonymous; now that analyze/generate require
+ * login, a signed-in abuser behind a shared/rotating IP wasn't meaningfully
+ * throttled by IP alone.
+ */
+export function checkRequestRateLimit(clientIp: string, userId?: string | null): RateLimitResult {
+  const ipResult = checkRateLimit(`ip:${clientIp}`);
+  if (!ipResult.allowed) return ipResult;
+
+  if (userId) {
+    const userResult = checkRateLimit(`user:${userId}`);
+    if (!userResult.allowed) return userResult;
+  }
+
+  return { allowed: true };
+}
+
 export function checkRateLimit(identifier: string): RateLimitResult {
   const now = Date.now();
   const windowStart = now - WINDOW_MS;

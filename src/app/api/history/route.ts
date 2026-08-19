@@ -3,12 +3,16 @@ import { NextResponse } from "next/server";
 import { listAnalysisHistoryUseCase } from "@/application/list-analysis-history-usecase";
 import { saveAnalysisHistoryUseCase } from "@/application/save-analysis-history-usecase";
 import { InvalidHistoryInputError, UnauthenticatedError } from "@/domain/history/errors";
+import { getCurrentUser } from "@/infrastructure/auth/supabase-server-client";
 import { getClientIp } from "@/lib/get-client-ip";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { checkRequestRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   const clientIp = getClientIp(request);
-  const rateLimit = checkRateLimit(clientIp);
+  // getCurrentUser() is cache()-wrapped — saveAnalysisHistoryUseCase's own
+  // auth check reuses this same call within the request.
+  const user = await getCurrentUser();
+  const rateLimit = checkRequestRateLimit(clientIp, user?.id);
   if (!rateLimit.allowed) {
     return NextResponse.json(
       { error: "Hiciste demasiadas solicitudes. Esperá un momento antes de volver a intentarlo." },
