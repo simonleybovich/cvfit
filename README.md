@@ -16,7 +16,9 @@ incluido el CV generado, si lo pediste — en un historial, solo si lo pedís ex
 - Next.js (App Router) + TypeScript
 - Tailwind CSS + shadcn/ui, tema oscuro con identidad propia (acento ámbar + tipografía serif
   para títulos vía Source Serif 4, no el look genérico por defecto de shadcn)
-- `@google/genai` (modelo `gemini-3.6-flash`, salida estructurada vía JSON schema)
+- `openai` apuntando al endpoint OpenAI-compatible de OpenCode Go (modelo `mimo-v2.5`, salida
+  estructurada vía JSON schema) como proveedor primario, con `@google/genai` (`gemini-3.6-flash`)
+  de fallback si OpenCode falla o no está configurado
 - `pdf-parse` / `mammoth` para extraer texto de PDF/DOCX
 - `docx` / `pdf-lib` para exportar el CV generado a DOCX/PDF; export a Typst vía templating de
   texto plano (sin librería ni compilación server-side)
@@ -39,13 +41,16 @@ incluido el CV generado, si lo pediste — en un historial, solo si lo pedís ex
    ```
 
    ```
+   OPENCODE_API_KEY=...
    GEMINI_API_KEY=...
    DATABASE_URL=postgresql://cvfit:cvfit@localhost:5432/cvfit
    NEXT_PUBLIC_SUPABASE_URL=...
    NEXT_PUBLIC_SUPABASE_ANON_KEY=...
    ```
 
-   - `GEMINI_API_KEY`: gratis en [Google AI Studio](https://aistudio.google.com/app/apikey).
+   - `OPENCODE_API_KEY`: proveedor primario, desde el dashboard de tu suscripción
+     [OpenCode Go](https://opencode.ai/go). Si falta o falla, se cae automáticamente a Gemini.
+   - `GEMINI_API_KEY`: fallback, gratis en [Google AI Studio](https://aistudio.google.com/app/apikey).
    - `DATABASE_URL`: apunta al Postgres local levantado en el paso 3 (valores por defecto del
      `docker-compose.yml` — no son secrets de producción). La leen tanto el Prisma Client en
      runtime como el CLI de Prisma (`npm run db:*`) vía `prisma.config.ts` en la raíz — a
@@ -72,8 +77,9 @@ incluido el CV generado, si lo pediste — en un historial, solo si lo pedís ex
 
 5. Abrí [http://localhost:3000](http://localhost:3000).
 
-Si `GEMINI_API_KEY` no está configurada, la app arranca igual (la landing y el formulario
-funcionan) pero `/api/analyze` y `/api/generate` responden con un error claro en vez de romper.
+Si ni `OPENCODE_API_KEY` ni `GEMINI_API_KEY` están configuradas, la app arranca igual (la landing
+y el formulario funcionan) pero `/api/analyze` y `/api/generate` responden con un error claro en
+vez de romper.
 Análisis y generación de CV no requieren login ni Postgres/Supabase en absoluto — esas variables
 solo hacen falta para usar login + historial (fase 3).
 
@@ -114,7 +120,7 @@ Con sesión iniciada, el resultado de un análisis muestra un botón "Guardar en
 acción explícita, nunca automática — que persiste la JD y el **análisis completo** (score,
 keywords, sugerencias) vía `POST /api/history`, y también el **CV generado** si ya lo pediste
 antes de guardar (secciones, cambios, keywords no incorporadas). Guardar el detalle completo
-evita tener que re-llamar a Gemini (y gastar tokens de nuevo) solo para revisar un análisis o
+evita tener que re-llamar a la IA (y gastar tokens de nuevo) solo para revisar un análisis o
 CV pasado — es una decisión consciente que amplía lo mínimo que preveía el spec original
 ("JD, score, fecha"), documentada como tal en `spec.md`.
 
@@ -129,7 +135,7 @@ verificación es "JWT válido → `userId` verificado → filtro de Prisma por e
 ## Arquitectura
 
 Estructura de carpetas inspirada en arquitectura hexagonal, adaptada a Next.js — la lógica de
-negocio no depende de detalles de infraestructura (SDK de Gemini, parsers de archivos, librerías
+negocio no depende de detalles de infraestructura (SDKs de IA, parsers de archivos, librerías
 de exportación, Next.js mismo):
 
 ```
@@ -157,6 +163,8 @@ src/
     list-analysis-history-usecase.ts  # Verifica sesión + lista entradas propias
     delete-analysis-history-usecase.ts # Verifica sesión + borra una entrada propia
   infrastructure/
+    ai/ai-client.ts               # Punto de entrada: OpenCode primero, Gemini de fallback
+    ai/opencode-client.ts         # Wrapper OpenAI-compatible de OpenCode Go (salida estructurada, con retry)
     ai/gemini-client.ts           # Wrapper del SDK de Gemini (salida estructurada, con retry)
     ai/prompts/analyze-prompt.ts
     ai/prompts/rewrite-prompt.ts

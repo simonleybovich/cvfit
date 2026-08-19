@@ -1,4 +1,4 @@
-import { requestStructuredJson } from "@/infrastructure/ai/gemini-client";
+import { requestStructuredJson } from "@/infrastructure/ai/ai-client";
 import { buildRewriteSystemPrompt, buildRewriteUserPrompt, REWRITE_OUTPUT_SCHEMA } from "@/infrastructure/ai/prompts/rewrite-prompt";
 import { getCurrentUser } from "@/infrastructure/auth/supabase-server-client";
 import { parseCvBuffer } from "@/infrastructure/parsing/cv-parser";
@@ -40,8 +40,8 @@ export interface GenerateCvInput {
 /**
  * Orchestrates the CV rewrite flow: validate input, parse the CV to plain
  * text, sanitize both untrusted texts (plus the optional prior-analysis
- * context), call Gemini with the rewrite prompt, and re-validate the
- * response shape and coherence before handing it back to the route handler.
+ * context), call the AI provider with the rewrite prompt, and re-validate
+ * the response shape and coherence before handing it back to the route handler.
  * Mirrors analyze-cv-usecase.ts's shape and error handling.
  */
 export async function generateCvUseCase(input: GenerateCvInput): Promise<GeneratedCv> {

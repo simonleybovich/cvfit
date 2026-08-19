@@ -32,6 +32,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # needs to be *present* so Next.js doesn't fail on undefined access during
 # static analysis/page data collection. Real values are injected at runtime
 # by Dokploy for these two.
+ENV OPENCODE_API_KEY=build-placeholder
 ENV GEMINI_API_KEY=build-placeholder
 ENV DATABASE_URL=postgresql://build:build@localhost:5432/build
 RUN npm run build

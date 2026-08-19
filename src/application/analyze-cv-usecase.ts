@@ -1,4 +1,4 @@
-import { requestStructuredJson } from "@/infrastructure/ai/gemini-client";
+import { requestStructuredJson } from "@/infrastructure/ai/ai-client";
 import { ANALYZE_OUTPUT_SCHEMA, buildAnalyzeSystemPrompt, buildAnalyzeUserPrompt } from "@/infrastructure/ai/prompts/analyze-prompt";
 import { getCurrentUser } from "@/infrastructure/auth/supabase-server-client";
 import { parseCvBuffer } from "@/infrastructure/parsing/cv-parser";
@@ -25,8 +25,8 @@ export interface AnalyzeCvInput {
 
 /**
  * Orchestrates the feedback-only CV analysis flow: validate input, parse the
- * CV to plain text, sanitize both untrusted texts, call Gemini with a
- * structured-output prompt, and re-validate the response shape before
+ * CV to plain text, sanitize both untrusted texts, call the AI provider with
+ * a structured-output prompt, and re-validate the response shape before
  * handing it back to the route handler.
  */
 export async function analyzeCvUseCase(input: AnalyzeCvInput): Promise<AnalysisResult> {
