@@ -16,16 +16,24 @@ RUN apk add --no-cache openssl
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-# Build-time-only placeholders: nothing in this app reads real secrets during
-# `next build` (route handlers read env at request time), but Next.js still
-# needs these vars *present* to avoid failing on undefined access during
-# static analysis/page data collection. Real values are injected at runtime
-# by Dokploy, not baked into the image.
+
+# NEXT_PUBLIC_* vars are inlined into the client JS bundle at build time, not
+# read at container runtime — a runtime env var can't fix a wrong value here.
+# Real values must come in as Docker build args (safe: these two are already
+# meant to be public/client-exposed, unlike GEMINI_API_KEY below).
+ARG NEXT_PUBLIC_SUPABASE_URL
+ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
+
 ENV NEXT_TELEMETRY_DISABLED=1
+# Server-only vars are read from process.env at request time, never inlined
+# into the client bundle — a build-time placeholder is fine here, it only
+# needs to be *present* so Next.js doesn't fail on undefined access during
+# static analysis/page data collection. Real values are injected at runtime
+# by Dokploy for these two.
 ENV GEMINI_API_KEY=build-placeholder
 ENV DATABASE_URL=postgresql://build:build@localhost:5432/build
-ENV NEXT_PUBLIC_SUPABASE_URL=https://build-placeholder.supabase.co
-ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=build-placeholder
 RUN npm run build
 
 # --- runner: minimal production image ---
