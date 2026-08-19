@@ -13,10 +13,8 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.resolve(__dirname),
   },
-  // pdfjs-dist (used by pdf-parse) tries to set up a worker file at runtime.
-  // Bundling it breaks that file resolution, so keep it external and let
-  // Node load it directly from node_modules instead.
-  serverExternalPackages: ["pdf-parse", "pdfjs-dist"],
+  // Keep the Node-only parser external so it is loaded directly at runtime.
+  serverExternalPackages: ["pdf-parse"],
 };
 
 export default nextConfig;
