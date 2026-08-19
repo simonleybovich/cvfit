@@ -3,6 +3,9 @@ import path from "node:path";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Standalone output for a lean production Docker image (only the traced
+  // dependency subset gets copied into the runtime stage, not node_modules).
+  output: "standalone",
   // Pin the workspace root explicitly: without this, Next.js/Turbopack can
   // mistakenly infer a parent directory as the root if it finds an
   // unrelated lockfile there (e.g. a stray package-lock.json in the user's
