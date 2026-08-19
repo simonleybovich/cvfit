@@ -8,6 +8,7 @@ import {
   EmptyJobDescriptionError,
   FileTooLargeError,
   InvalidFileTypeError,
+  UnauthenticatedError,
 } from "@/domain/cv-analysis/errors";
 import { getClientIp } from "@/lib/get-client-ip";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -79,6 +80,9 @@ function parsePriorAnalysis(raw: FormDataEntryValue | null): { keywordsFound?: u
 }
 
 function handleGenerateError(error: unknown): NextResponse {
+  if (error instanceof UnauthenticatedError) {
+    return NextResponse.json({ error: error.message }, { status: 401 });
+  }
   if (error instanceof InvalidFileTypeError) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }

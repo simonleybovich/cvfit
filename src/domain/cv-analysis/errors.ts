@@ -49,6 +49,14 @@ export class AiServiceUnavailableError extends AiServiceError {
   }
 }
 
+/** Analysis/generation require a signed-in user (cost control — see spec.md deviation note). */
+export class UnauthenticatedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "UnauthenticatedError";
+  }
+}
+
 export class RateLimitExceededError extends Error {
   constructor(
     message: string,

@@ -1,10 +1,12 @@
 import { requestStructuredJson } from "@/infrastructure/ai/gemini-client";
 import { ANALYZE_OUTPUT_SCHEMA, buildAnalyzeSystemPrompt, buildAnalyzeUserPrompt } from "@/infrastructure/ai/prompts/analyze-prompt";
+import { getCurrentUser } from "@/infrastructure/auth/supabase-server-client";
 import { parseCvBuffer } from "@/infrastructure/parsing/cv-parser";
 
 import { parseAnalysisResult } from "@/domain/cv-analysis/parse-analysis-result";
 import { sanitizeForPrompt } from "@/domain/cv-analysis/sanitize";
 import type { AnalysisResult } from "@/domain/cv-analysis/types";
+import { UnauthenticatedError } from "@/domain/cv-analysis/errors";
 import {
   MAX_CV_TEXT_LENGTH,
   MAX_JOB_DESCRIPTION_LENGTH,
@@ -28,6 +30,11 @@ export interface AnalyzeCvInput {
  * handing it back to the route handler.
  */
 export async function analyzeCvUseCase(input: AnalyzeCvInput): Promise<AnalysisResult> {
+  const user = await getCurrentUser();
+  if (!user) {
+    throw new UnauthenticatedError("Iniciá sesión para analizar tu CV.");
+  }
+
   const fileKind = resolveCvFileKind(input.fileName, input.mimeType);
   validateCvFileSize(input.fileBuffer.byteLength);
 

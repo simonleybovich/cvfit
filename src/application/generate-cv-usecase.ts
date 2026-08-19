@@ -1,9 +1,12 @@
 import { requestStructuredJson } from "@/infrastructure/ai/gemini-client";
 import { buildRewriteSystemPrompt, buildRewriteUserPrompt, REWRITE_OUTPUT_SCHEMA } from "@/infrastructure/ai/prompts/rewrite-prompt";
+import { getCurrentUser } from "@/infrastructure/auth/supabase-server-client";
 import { parseCvBuffer } from "@/infrastructure/parsing/cv-parser";
 
-// File/JD validation and prompt sanitization are generic to "CV + JD in,"
-// not specific to the analysis flow — reused as-is rather than duplicated.
+// File/JD validation, prompt sanitization, and the auth-required error are
+// generic to "CV + JD in," not specific to the analysis flow — reused as-is
+// rather than duplicated.
+import { UnauthenticatedError } from "@/domain/cv-analysis/errors";
 import { sanitizeForPrompt } from "@/domain/cv-analysis/sanitize";
 import {
   MAX_CV_TEXT_LENGTH,
@@ -42,6 +45,11 @@ export interface GenerateCvInput {
  * Mirrors analyze-cv-usecase.ts's shape and error handling.
  */
 export async function generateCvUseCase(input: GenerateCvInput): Promise<GeneratedCv> {
+  const user = await getCurrentUser();
+  if (!user) {
+    throw new UnauthenticatedError("Iniciá sesión para generar un CV optimizado.");
+  }
+
   const fileKind = resolveCvFileKind(input.fileName, input.mimeType);
   validateCvFileSize(input.fileBuffer.byteLength);
 

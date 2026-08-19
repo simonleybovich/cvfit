@@ -1,6 +1,8 @@
 import { ShieldCheck } from "lucide-react";
 
 import { AnalyzeForm } from "@/components/analyze/analyze-form";
+import { SignInMenu } from "@/components/auth/sign-in-menu";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCurrentUser } from "@/infrastructure/auth/supabase-server-client";
 
 export default async function Home() {
@@ -26,7 +28,23 @@ export default async function Home() {
         </div>
       </header>
 
-      <AnalyzeForm isSignedIn={user !== null} />
+      {user ? (
+        <AnalyzeForm isSignedIn />
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Iniciá sesión para analizar tu CV</CardTitle>
+            <CardDescription>
+              Para controlar el uso de la IA, analizar o generar un CV requiere estar logueado.
+              Igual que el resto de la app, tu CV nunca se guarda salvo que vos lo pidas
+              explícitamente desde tu historial.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <SignInMenu />
+          </CardContent>
+        </Card>
+      )}
 
       <footer className="mt-4 flex flex-col items-center gap-4 text-center text-xs text-muted-foreground">
         <p>

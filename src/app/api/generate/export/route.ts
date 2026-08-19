@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { InvalidExportPayloadError } from "@/domain/cv-generation/errors";
 import { parseCvDocumentData } from "@/domain/cv-generation/parse-generation-result";
+import { getCurrentUser } from "@/infrastructure/auth/supabase-server-client";
 import { generateCvDocx } from "@/infrastructure/generation/docx-generator";
 import { generateCvPdf } from "@/infrastructure/generation/pdf-generator";
 import { generateCvTypst } from "@/infrastructure/generation/typst-generator";
@@ -56,6 +57,11 @@ export async function POST(request: Request) {
         headers: rateLimit.retryAfterSeconds ? { "Retry-After": String(rateLimit.retryAfterSeconds) } : undefined,
       },
     );
+  }
+
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "Iniciá sesión para descargar el CV generado." }, { status: 401 });
   }
 
   let body: unknown;
