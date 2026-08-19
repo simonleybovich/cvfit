@@ -1,0 +1,34 @@
+import { ShieldCheck } from "lucide-react";
+
+import { AnalyzeForm } from "@/components/analyze/analyze-form";
+
+export default function Home() {
+  return (
+    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-10 px-4 py-12 sm:py-16">
+      <header className="flex flex-col gap-4 text-center">
+        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+          ¿Qué tan bien matchea tu CV con esa vacante?
+        </h1>
+        <p className="text-balance text-muted-foreground sm:text-lg">
+          Subí tu CV y pegá la descripción del puesto. En segundos vas a tener una estimación de
+          compatibilidad, las keywords que te faltan y sugerencias concretas para mejorar tu CV
+          antes de postularte.
+        </p>
+        <div className="mx-auto flex max-w-xl items-start gap-2 rounded-lg border bg-muted/40 p-3 text-left text-sm text-muted-foreground">
+          <ShieldCheck className="mt-0.5 size-4 shrink-0 text-emerald-600" />
+          <p>
+            Tu CV se procesa solo en memoria durante este análisis: no se guarda el archivo ni el
+            texto extraído en el servidor, ni se persiste en ninguna base de datos.
+          </p>
+        </div>
+      </header>
+
+      <AnalyzeForm />
+
+      <footer className="mt-4 text-center text-xs text-muted-foreground">
+        Los resultados son una estimación generada por IA, no un puntaje oficial de ningún sistema
+        de reclutamiento (ATS).
+      </footer>
+    </main>
+  );
+}
