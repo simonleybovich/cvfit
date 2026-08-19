@@ -28,9 +28,19 @@ export default async function Home() {
 
       <AnalyzeForm isSignedIn={user !== null} />
 
-      <footer className="mt-4 text-center text-xs text-muted-foreground">
-        Los resultados son una estimación generada por IA, no un puntaje oficial de ningún sistema
-        de reclutamiento (ATS).
+      <footer className="mt-4 flex flex-col items-center gap-4 text-center text-xs text-muted-foreground">
+        <p>
+          Los resultados son una estimación generada por IA, no un puntaje oficial de ningún
+          sistema de reclutamiento (ATS).
+        </p>
+        <a href="https://cafecito.app/simonleybo" rel="noopener" target="_blank">
+          {/* eslint-disable-next-line @next/next/no-img-element -- official cafecito.app embed badge */}
+          <img
+            srcSet="https://cdn.cafecito.app/imgs/buttons/button_5.png 1x, https://cdn.cafecito.app/imgs/buttons/button_5_2x.png 2x, https://cdn.cafecito.app/imgs/buttons/button_5_3.75x.png 3.75x"
+            src="https://cdn.cafecito.app/imgs/buttons/button_5.png"
+            alt="Invitame un café en cafecito.app"
+          />
+        </a>
       </footer>
     </main>
   );

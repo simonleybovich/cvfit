@@ -198,3 +198,7 @@ middleware.ts                     # Refresca la sesión de Supabase en cada requ
 
 Control de costos con Redis (rate limiting por usuario, no solo por IP) está planeado para fase 4
 y no está implementado todavía.
+
+---
+
+[![Invitame un café en cafecito.app](https://cdn.cafecito.app/imgs/buttons/button_5.svg)](https://cafecito.app/simonleybo)
