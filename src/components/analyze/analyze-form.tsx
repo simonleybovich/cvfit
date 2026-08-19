@@ -211,8 +211,7 @@ export function AnalyzeForm({ isSignedIn }: AnalyzeFormProps) {
             </Button>
             {submitState === "loading" && (
               <p className="text-sm text-muted-foreground">
-                Esto puede tardar unos segundos mientras Gemini analiza tu CV contra la descripción del
-                puesto.
+                Esto puede tardar unos segundos mientras analizamos tu CV contra la descripción del puesto.
               </p>
             )}
           </form>

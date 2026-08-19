@@ -19,7 +19,7 @@ export function AnalysisResults({ result }: AnalysisResultsProps) {
           <CardTitle>Estimación de compatibilidad</CardTitle>
           <CardDescription>
             No es un puntaje real de ATS: los sistemas de reclutamiento reales no funcionan con una
-            fórmula única. Es una estimación orientativa de Gemini para ayudarte a priorizar qué mejorar.
+            fórmula única. Es una estimación orientativa para ayudarte a priorizar qué mejorar.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-6">

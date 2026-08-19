@@ -89,7 +89,7 @@ export function GenerateCvPanel({ cvFile, jobDescription, analysis, onGenerated 
           </Button>
           {generateState === "loading" && (
             <p className="text-sm text-muted-foreground">
-              Esto puede tardar unos segundos mientras Gemini reescribe tu CV.
+              Esto puede tardar unos segundos mientras reescribimos tu CV.
             </p>
           )}
           {generateError && (

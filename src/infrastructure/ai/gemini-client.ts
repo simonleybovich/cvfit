@@ -102,18 +102,18 @@ export async function requestStructuredJson({
       throw lastError;
     })();
   } catch (error) {
-    throw new AiServiceError("No se pudo contactar a la API de Gemini.", { cause: error });
+    throw new AiServiceError("No se pudo contactar al servicio de análisis.", { cause: error });
   }
 
   const text = response.text;
 
   if (!text) {
-    throw new AiServiceError("La respuesta de Gemini no contenía el contenido esperado.");
+    throw new AiServiceError("El servicio de análisis no devolvió el contenido esperado.");
   }
 
   try {
     return JSON.parse(text);
   } catch (error) {
-    throw new AiServiceError("La respuesta de Gemini no era JSON válido.", { cause: error });
+    throw new AiServiceError("El servicio de análisis devolvió una respuesta inválida.", { cause: error });
   }
 }
