@@ -1,222 +1,178 @@
 # cvfit
 
-Herramienta que analiza qué tan bien matchea un CV (PDF o DOCX) contra la descripción de un
-puesto: devuelve una estimación de compatibilidad, las keywords que faltan, las que ya están
-presentes, y sugerencias concretas de mejora por sección. A partir de ese análisis, también puede
-generar una versión optimizada del CV — incorporando las keywords relevantes de forma honesta,
-sin inventar experiencia — descargable en DOCX, PDF o Typst.
+cvfit analiza la compatibilidad entre tu CV y una descripción de puesto. Detecta keywords
+presentes y faltantes, propone mejoras concretas y puede generar una versión optimizada del CV
+sin inventar experiencia, tecnologías ni logros.
 
-El análisis y la generación de CV no requieren cuenta: todo se procesa en memoria durante el
-request, sin persistencia. Con login (GitHub o Google) además podés guardar cada análisis —
-incluido el CV generado, si lo pediste — en un historial, solo si lo pedís explícitamente
-(ver sección Auth abajo).
+La aplicación está construida como un proyecto de portfolio público: prioriza una arquitectura
+clara, privacidad por defecto y una integración de IA intercambiable.
+
+## Funcionalidades
+
+- Análisis de CV en PDF o DOCX frente a una descripción de puesto.
+- Score estimado de compatibilidad, keywords encontradas y faltantes.
+- Sugerencias accionables agrupadas por sección del CV.
+- Generación de un CV optimizado respetando el contenido original.
+- Exportación a DOCX, PDF y Typst (`.typ`).
+- Autenticación con GitHub, Google o email y contraseña mediante Supabase Auth.
+- Historial privado de análisis y CV generados, guardado solo cuando el usuario lo solicita.
+- Rate limiting distribuido por IP y usuario con Redis, con fallback en memoria.
 
 ## Stack
 
-- Next.js (App Router) + TypeScript
-- Tailwind CSS + shadcn/ui, tema oscuro con identidad propia (acento ámbar + tipografía serif
-  para títulos vía Source Serif 4, no el look genérico por defecto de shadcn)
-- `openai` apuntando al endpoint OpenAI-compatible de OpenCode Go (modelo `mimo-v2.5`, salida
-  estructurada vía JSON schema) como proveedor primario, con `@google/genai` (`gemini-3.6-flash`)
-  de fallback si OpenCode falla o no está configurado
-- `pdf-parse` / `mammoth` para extraer texto de PDF/DOCX
-- `docx` / `pdf-lib` para exportar el CV generado a DOCX/PDF; export a Typst vía templating de
-  texto plano (sin librería ni compilación server-side)
-- `@supabase/ssr` + `@supabase/supabase-js` para login con GitHub o Google OAuth (solo identidad)
-- Prisma 7 (`@prisma/adapter-pg` + `prisma.config.ts`) + Postgres propio (via Docker Compose en
-  local) para el historial de análisis
-- Redis para rate limiting distribuido (con fallback en memoria si Redis no está disponible)
+| Área | Tecnología |
+| --- | --- |
+| Frontend y backend | Next.js App Router, TypeScript |
+| UI | Tailwind CSS, shadcn/ui, Base UI |
+| IA | OpenCode Go vía API compatible con OpenAI; Gemini como fallback |
+| Parseo | `pdf-parse`, `mammoth` |
+| Exportación | `docx`, `pdf-lib`, plantillas Typst |
+| Auth | Supabase Auth |
+| Persistencia | PostgreSQL + Prisma 7 |
+| Rate limiting | Redis |
+| Deploy | Docker, Dokploy |
 
-## Cómo correrlo localmente
+## Requisitos
 
-1. Instalá las dependencias:
+- Node.js 22+
+- npm
+- Docker y Docker Compose
+- Una cuenta de Supabase para habilitar autenticación
+- Una API key de OpenCode Go o Gemini
 
-   ```bash
-   npm install
-   ```
+## Inicio rápido
 
-2. Copiá `.env.example` a `.env.local` y completá las variables:
+### 1. Instalar dependencias
 
-   ```bash
-   cp .env.example .env.local
-   ```
+```bash
+npm install
+```
 
-   ```
-   OPENCODE_API_KEY=...
-   GEMINI_API_KEY=...
-   DATABASE_URL=postgresql://cvfit:cvfit@localhost:5432/cvfit
-   REDIS_URL=redis://localhost:6379
-   NEXT_PUBLIC_SUPABASE_URL=...
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=...
-   ```
+### 2. Configurar variables de entorno
 
-   - `OPENCODE_API_KEY`: proveedor primario, desde el dashboard de tu suscripción
-     [OpenCode Go](https://opencode.ai/go). Si falta o falla, se cae automáticamente a Gemini.
-   - `GEMINI_API_KEY`: fallback, gratis en [Google AI Studio](https://aistudio.google.com/app/apikey).
-   - `DATABASE_URL`: apunta al Postgres local levantado en el paso 3 (valores por defecto del
-     `docker-compose.yml` — no son secrets de producción). La leen tanto el Prisma Client en
-     runtime como el CLI de Prisma (`npm run db:*`) vía `prisma.config.ts` en la raíz — a
-     diferencia de Prisma 6, el CLI ya no carga `.env`/`.env.local` automáticamente, por eso
-     `prisma.config.ts` lo hace explícito.
-   - `REDIS_URL`: Redis usado para coordinar el rate limiting entre instancias. Si falta o queda
-     temporalmente indisponible, la app conserva protección con un fallback en memoria por proceso
-     y registra el incidente; no desactiva el límite.
-   - `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY`: del dashboard de tu proyecto
-     de [Supabase](https://supabase.com) (Settings → API), con los providers de GitHub y/o Google
-     habilitados en Authentication → Sign In / Providers (cada uno con su propia OAuth App/Client
-     en GitHub o Google Cloud Console, apuntando al callback de Supabase
-     `https://<tu-proyecto>.supabase.co/auth/v1/callback`).
+Copiá el archivo de ejemplo:
 
-3. Levantá el Postgres local (solo para historial — ver sección Auth abajo) y aplicá el schema:
+```bash
+cp .env.example .env.local
+```
 
-   ```bash
-   docker compose up -d
-   npm run db:migrate
-   ```
+Completá las variables necesarias:
 
-4. Levantá el servidor de desarrollo:
+```env
+OPENCODE_API_KEY=
+GEMINI_API_KEY=
+DATABASE_URL=postgresql://cvfit:cvfit@localhost:5432/cvfit
+REDIS_URL=redis://localhost:6379
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+```
 
-   ```bash
-   npm run dev
-   ```
+`OPENCODE_API_KEY` es el proveedor principal. Si no está configurada o el proveedor falla,
+cvfit intenta usar `GEMINI_API_KEY` como fallback.
 
-5. Abrí [http://localhost:3000](http://localhost:3000).
+Las variables `NEXT_PUBLIC_SUPABASE_*` se obtienen desde **Supabase → Settings → API**.
+Además, hay que habilitar los proveedores de login deseados en **Authentication → Sign In /
+Providers** y configurar sus OAuth apps correspondientes.
 
-Si ni `OPENCODE_API_KEY` ni `GEMINI_API_KEY` están configuradas, la app arranca igual (la landing
-y el formulario funcionan) pero `/api/analyze` y `/api/generate` responden con un error claro en
-vez de romper.
-Análisis y generación de CV no requieren login ni Postgres/Supabase en absoluto — esas variables
-solo hacen falta para usar login + historial (fase 3).
+### 3. Levantar los servicios locales
 
-## Funcionalidad
+```bash
+docker compose up -d
+npm run db:migrate
+```
 
-### Análisis (feedback)
+Esto inicia PostgreSQL y Redis. PostgreSQL almacena el historial; Redis coordina el rate limiting
+entre instancias.
 
-Subís un CV y pegás una job description. `POST /api/analyze` devuelve un JSON estructurado con
-score estimado, keywords presentes/faltantes y sugerencias por sección.
+### 4. Iniciar Next.js
 
-### Generación de CV optimizado
+```bash
+npm run dev
+```
 
-Sobre el resultado del análisis, un botón dispara `POST /api/generate`: reescribe el CV en una
-estructura tipada (encabezado/contacto, resumen, experiencia, skills agrupadas, educación,
-idiomas), incorporando keywords del JD solo donde hay evidencia real en el CV original — nunca
-inventa experiencia, empresas ni tecnologías. Si una keyword del JD no tiene sustento en el CV,
-se reporta como "no incorporada" en vez de agregarse a ciegas.
+Abrí [http://localhost:3000](http://localhost:3000).
 
-El resultado se puede descargar en tres formatos vía `POST /api/generate/export`:
+## Scripts
 
-- **DOCX** — vía `docx`.
-- **PDF** — vía `pdf-lib` (sin dependencia de binarios externos como LibreOffice).
-- **Typst** — código fuente `.typ` listo para compilar con tu propio toolchain de Typst; usa el
-  template personal `@preview/silver-dev-cv`.
+| Comando | Uso |
+| --- | --- |
+| `npm run dev` | Servidor de desarrollo |
+| `npm run build` | Build de producción |
+| `npm run start` | Servidor de producción |
+| `npm test` | Ejecutar tests |
+| `npm run lint` | Ejecutar ESLint |
+| `npm run db:migrate` | Crear y aplicar migraciones locales |
+| `npm run db:deploy` | Aplicar migraciones en producción |
+| `npm run db:studio` | Abrir Prisma Studio |
 
-Ninguno de los dos endpoints de generación vuelve a llamar a la IA para exportar: el cliente
-reenvía la estructura ya generada, y cada exportador es una transformación determinística.
+## Privacidad y seguridad
 
-### Auth + historial
-
-Login con GitHub o Google vía Supabase Auth — usado **solo para identidad** (sesión/JWT), no
-para datos: el historial vive en el Postgres propio de la app, no en la base hosteada de
-Supabase (ver nota de arquitectura en `spec.md` sección 6 si trabajás sobre este repo). No hay
-sync de tablas de usuarios entre ambos sistemas; la tabla `AnalysisHistory` solo guarda el
-`userId` (UUID del JWT de Supabase) como referencia plana.
-
-Con sesión iniciada, el resultado de un análisis muestra un botón "Guardar en mi historial" —
-acción explícita, nunca automática — que persiste la JD y el **análisis completo** (score,
-keywords, sugerencias) vía `POST /api/history`, y también el **CV generado** si ya lo pediste
-antes de guardar (secciones, cambios, keywords no incorporadas). Guardar el detalle completo
-evita tener que re-llamar a la IA (y gastar tokens de nuevo) solo para revisar un análisis o
-CV pasado — es una decisión consciente que amplía lo mínimo que preveía el spec original
-("JD, score, fecha"), documentada como tal en `spec.md`.
-
-`/historial` deja ver el análisis completo y, si existe, re-descargar el CV generado
-(DOCX/PDF/Typst) desde los datos guardados — sin volver a llamar a la IA — y reutilizar la JD de
-una entrada vieja en un nuevo análisis sin tener que pegarla de nuevo. También se puede borrar
-una entrada. `GET`/`POST`/`DELETE /api/history[/id]` devuelven u operan solo sobre las entradas
-del usuario autenticado, filtradas en código de aplicación (no hay RLS de Supabase acá: esos
-datos no están en la base de Supabase, así que Postgres/PostgREST RLS no aplica — la
-verificación es "JWT válido → `userId` verificado → filtro de Prisma por ese `userId`").
+- El archivo subido y el texto extraído se procesan en memoria durante el request.
+- El CV original no se guarda en la base de datos.
+- El historial solo se persiste mediante una acción explícita del usuario autenticado.
+- El historial guarda la descripción del puesto, el análisis derivado y, si existe, el CV generado.
+- El contenido del CV y de la descripción se trata como datos no confiables dentro de los prompts.
+- Se validan tipo y tamaño de archivo tanto en cliente como en servidor.
+- El rate limiting se aplica por IP y por usuario autenticado en los endpoints costosos.
+- Si Redis no está disponible, se activa un fallback por proceso para no deshabilitar la protección.
+- Las APIs no exponen las claves de los proveedores al navegador.
 
 ## Arquitectura
 
-Estructura de carpetas inspirada en arquitectura hexagonal, adaptada a Next.js — la lógica de
-negocio no depende de detalles de infraestructura (SDKs de IA, parsers de archivos, librerías
-de exportación, Next.js mismo):
+El proyecto sigue una arquitectura hexagonal adaptada a Next.js:
 
-```
+```text
 src/
-  app/
-    api/analyze/route.ts          # POST: CV + JD -> feedback estructurado
-    api/generate/route.ts         # POST: CV + JD -> CV reescrito (estructura tipada)
-    api/generate/export/route.ts  # POST: estructura ya generada -> DOCX/PDF/Typst
-    api/history/route.ts          # POST/GET: guardar/listar historial (requiere sesión)
-    api/history/[id]/route.ts     # DELETE: borrar una entrada propia del historial
-    auth/callback/route.ts        # GET: exchange del code de OAuth por sesión
-    historial/page.tsx            # Vista de historial del usuario logueado
-    page.tsx                      # Landing + formulario en una sola vista
-  domain/
-    cv-analysis/                  # Lógica de negocio pura del análisis
-      types.ts errors.ts validation.ts sanitize.ts parse-analysis-result.ts
-    cv-generation/                # Lógica de negocio pura de la generación
-      types.ts errors.ts validation.ts rewrite-cv.ts parse-generation-result.ts
-    history/                      # Lógica de negocio pura del historial
-      types.ts errors.ts validation.ts
-  application/
-    analyze-cv-usecase.ts             # Orquesta domain + infrastructure (análisis)
-    generate-cv-usecase.ts            # Orquesta domain + infrastructure (generación)
-    save-analysis-history-usecase.ts  # Verifica sesión + persiste una entrada
-    list-analysis-history-usecase.ts  # Verifica sesión + lista entradas propias
-    delete-analysis-history-usecase.ts # Verifica sesión + borra una entrada propia
-  infrastructure/
-    ai/ai-client.ts               # Punto de entrada: OpenCode primero, Gemini de fallback
-    ai/opencode-client.ts         # Wrapper OpenAI-compatible de OpenCode Go (salida estructurada, con retry)
-    ai/gemini-client.ts           # Wrapper del SDK de Gemini (salida estructurada, con retry)
-    ai/prompts/analyze-prompt.ts
-    ai/prompts/rewrite-prompt.ts
-    parsing/pdf-parser.ts docx-parser.ts cv-parser.ts
-    generation/docx-generator.ts pdf-generator.ts typst-generator.ts
-    auth/supabase-browser-client.ts supabase-server-client.ts
-    persistence/postgres/prisma-client.ts analysis-history-repository.ts
-  components/
-    analyze/                      # UI de formulario y resultados de análisis
-    generate/                     # UI de generación, preview y descargas
-    auth/                         # Botones de sign-in/sign-out (Supabase)
-    layout/site-header.tsx        # Header server-side: estado de sesión sin flash
-  lib/                            # Rate limiting Redis/fallback, extracción de IP de cliente
-prisma/schema.prisma              # Modelo AnalysisHistory (Postgres propio, no Supabase)
-prisma.config.ts                  # Config del CLI de Prisma 7 (datasource/migrations, lee DATABASE_URL)
-docker-compose.yml                # Postgres + Redis locales
-middleware.ts                     # Refresca la sesión de Supabase en cada request
+├── app/             # Páginas, layout, callback de auth y route handlers
+├── components/      # Componentes de UI organizados por funcionalidad
+├── domain/          # Tipos, validaciones y reglas de negocio puras
+├── application/     # Casos de uso que coordinan el flujo
+├── infrastructure/  # IA, auth, persistencia, parseo y exportación
+└── lib/             # Rate limiting y utilidades transversales
 ```
 
-## Seguridad y privacidad
+La capa de IA se accede mediante una interfaz común. Esto permite cambiar el proveedor sin
+modificar el dominio ni los casos de uso.
 
-- El CV y la job description se procesan enteramente en memoria durante el request; no se
-  persiste el archivo, el texto extraído, ni ningún resultado en ningún lado.
-- El texto extraído se sanitiza y se envuelve en secciones claramente delimitadas dentro de los
-  prompts, con instrucciones explícitas al modelo de tratar ese contenido como datos, nunca como
-  instrucciones — mitigación básica de prompt injection. El exportador de Typst aplica su propio
-  escapado de caracteres especiales del lenguaje sobre contenido no confiable.
-- Validación de tipo de archivo (PDF/DOCX) y tamaño máximo (5MB) tanto en el cliente como en el
-  servidor.
-- Rate limiting por IP y usuario autenticado (Redis, ventana deslizante atómica) en los endpoints
-  de análisis, generación, exportación y guardado/borrado de historial. Si Redis falla, se usa un
-  fallback en memoria por proceso para mantener la protección mientras se registra el incidente.
-- Los campos de identidad/contacto del CV generado (nombre, dirección, contactos, institución,
-  fechas) se extraen del CV original — la IA no tiene margen para inventarlos ni "optimizarlos".
-- El historial nunca guarda el CV subido ni su texto extraído — solo la JD, el análisis derivado
-  de ella, y (si se generó) el CV reescrito, que es contenido derivado por la IA, no el archivo
-  original — y solo se escribe si el usuario logueado lo pide explícitamente con el botón
-  "Guardar en mi historial", nunca automáticamente al analizar.
-- Las consultas de historial se filtran server-side por el `userId` verificado desde el JWT de
-  Supabase (`getUser()`, no `getSession()` — revalida contra Supabase Auth en vez de confiar en
-  el cookie sin más) — no hay Row Level Security porque esta tabla no vive en la base de datos
-  de Supabase.
+## API principal
 
-## Qué falta
+| Método | Endpoint | Descripción |
+| --- | --- | --- |
+| `POST` | `/api/analyze` | Analiza un CV contra una descripción |
+| `POST` | `/api/generate` | Genera un CV optimizado |
+| `POST` | `/api/generate/export` | Exporta un CV a DOCX, PDF o Typst |
+| `GET` | `/api/history` | Lista el historial del usuario autenticado |
+| `POST` | `/api/history` | Guarda una entrada explícitamente |
+| `DELETE` | `/api/history/:id` | Elimina una entrada propia |
 
-El rate limiting distribuido de fase 4 está implementado. BYO API keys y otros cambios de control de
-costos quedan fuera de este alcance.
+## Producción
+
+El proyecto incluye un `Dockerfile` multi-stage compatible con el output standalone de Next.js.
+Para un deploy en Dokploy hay que configurar las variables de entorno de producción, incluyendo:
+
+- `OPENCODE_API_KEY` y/o `GEMINI_API_KEY`.
+- `DATABASE_URL` apuntando al PostgreSQL de producción.
+- `REDIS_URL` apuntando al Redis de producción.
+- Las variables públicas de Supabase como argumentos de build.
+
+Antes de iniciar la aplicación, aplicar las migraciones con:
+
+```bash
+npm run db:deploy
+```
+
+## Estado del proyecto
+
+- Fase 1: análisis de compatibilidad — completa.
+- Fase 2: generación y exportación de CV — completa.
+- Fase 3: autenticación e historial — completa.
+- Fase 4: rate limiting distribuido — completa.
+- BYO API keys y otros controles avanzados de costos — fuera del alcance actual.
+
+## Licencia
+
+El proyecto todavía no declara una licencia. Hasta que se agregue una licencia explícita, el código
+no debe asumirse como reutilizable fuera de los términos aplicables del repositorio.
 
 ---
 
