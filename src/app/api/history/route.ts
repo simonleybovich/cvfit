@@ -12,7 +12,7 @@ export async function POST(request: Request) {
   // getCurrentUser() is cache()-wrapped — saveAnalysisHistoryUseCase's own
   // auth check reuses this same call within the request.
   const user = await getCurrentUser();
-  const rateLimit = checkRequestRateLimit(clientIp, user?.id);
+  const rateLimit = await checkRequestRateLimit(clientIp, user?.id);
   if (!rateLimit.allowed) {
     return NextResponse.json(
       { error: "Hiciste demasiadas solicitudes. Esperá un momento antes de volver a intentarlo." },

@@ -49,7 +49,7 @@ function parseExportFormat(value: unknown): ExportFormat {
 export async function POST(request: Request) {
   const clientIp = getClientIp(request);
   const user = await getCurrentUser();
-  const rateLimit = checkRequestRateLimit(clientIp, user?.id);
+  const rateLimit = await checkRequestRateLimit(clientIp, user?.id);
   if (!rateLimit.allowed) {
     return NextResponse.json(
       { error: "Hiciste demasiadas solicitudes. Esperá un momento antes de volver a intentarlo." },

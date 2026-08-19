@@ -11,7 +11,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   // getCurrentUser() is cache()-wrapped — deleteAnalysisHistoryUseCase's own
   // auth check reuses this same call within the request.
   const user = await getCurrentUser();
-  const rateLimit = checkRequestRateLimit(clientIp, user?.id);
+  const rateLimit = await checkRequestRateLimit(clientIp, user?.id);
   if (!rateLimit.allowed) {
     return NextResponse.json(
       { error: "Hiciste demasiadas solicitudes. Esperá un momento antes de volver a intentarlo." },

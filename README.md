@@ -25,6 +25,7 @@ incluido el CV generado, si lo pediste — en un historial, solo si lo pedís ex
 - `@supabase/ssr` + `@supabase/supabase-js` para login con GitHub o Google OAuth (solo identidad)
 - Prisma 7 (`@prisma/adapter-pg` + `prisma.config.ts`) + Postgres propio (via Docker Compose en
   local) para el historial de análisis
+- Redis para rate limiting distribuido (con fallback en memoria si Redis no está disponible)
 
 ## Cómo correrlo localmente
 
@@ -44,6 +45,7 @@ incluido el CV generado, si lo pediste — en un historial, solo si lo pedís ex
    OPENCODE_API_KEY=...
    GEMINI_API_KEY=...
    DATABASE_URL=postgresql://cvfit:cvfit@localhost:5432/cvfit
+   REDIS_URL=redis://localhost:6379
    NEXT_PUBLIC_SUPABASE_URL=...
    NEXT_PUBLIC_SUPABASE_ANON_KEY=...
    ```
@@ -56,6 +58,9 @@ incluido el CV generado, si lo pediste — en un historial, solo si lo pedís ex
      runtime como el CLI de Prisma (`npm run db:*`) vía `prisma.config.ts` en la raíz — a
      diferencia de Prisma 6, el CLI ya no carga `.env`/`.env.local` automáticamente, por eso
      `prisma.config.ts` lo hace explícito.
+   - `REDIS_URL`: Redis usado para coordinar el rate limiting entre instancias. Si falta o queda
+     temporalmente indisponible, la app conserva protección con un fallback en memoria por proceso
+     y registra el incidente; no desactiva el límite.
    - `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY`: del dashboard de tu proyecto
      de [Supabase](https://supabase.com) (Settings → API), con los providers de GitHub y/o Google
      habilitados en Authentication → Sign In / Providers (cada uno con su propia OAuth App/Client
@@ -177,10 +182,10 @@ src/
     generate/                     # UI de generación, preview y descargas
     auth/                         # Botones de sign-in/sign-out (Supabase)
     layout/site-header.tsx        # Header server-side: estado de sesión sin flash
-  lib/                            # Rate limiting en memoria, extracción de IP de cliente
+  lib/                            # Rate limiting Redis/fallback, extracción de IP de cliente
 prisma/schema.prisma              # Modelo AnalysisHistory (Postgres propio, no Supabase)
 prisma.config.ts                  # Config del CLI de Prisma 7 (datasource/migrations, lee DATABASE_URL)
-docker-compose.yml                # Postgres local para historial
+docker-compose.yml                # Postgres + Redis locales
 middleware.ts                     # Refresca la sesión de Supabase en cada request
 ```
 
@@ -194,8 +199,9 @@ middleware.ts                     # Refresca la sesión de Supabase en cada requ
   escapado de caracteres especiales del lenguaje sobre contenido no confiable.
 - Validación de tipo de archivo (PDF/DOCX) y tamaño máximo (5MB) tanto en el cliente como en el
   servidor.
-- Rate limiting básico por IP (in-memory, ventana deslizante) en los endpoints de análisis,
-  generación, y guardado de historial.
+- Rate limiting por IP y usuario autenticado (Redis, ventana deslizante atómica) en los endpoints
+  de análisis, generación, exportación y guardado/borrado de historial. Si Redis falla, se usa un
+  fallback en memoria por proceso para mantener la protección mientras se registra el incidente.
 - Los campos de identidad/contacto del CV generado (nombre, dirección, contactos, institución,
   fechas) se extraen del CV original — la IA no tiene margen para inventarlos ni "optimizarlos".
 - El historial nunca guarda el CV subido ni su texto extraído — solo la JD, el análisis derivado
@@ -209,8 +215,8 @@ middleware.ts                     # Refresca la sesión de Supabase en cada requ
 
 ## Qué falta
 
-Control de costos con Redis (rate limiting por usuario, no solo por IP) está planeado para fase 4
-y no está implementado todavía.
+El rate limiting distribuido de fase 4 está implementado. BYO API keys y otros cambios de control de
+costos quedan fuera de este alcance.
 
 ---
 

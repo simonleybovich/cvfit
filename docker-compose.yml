@@ -16,5 +16,14 @@ services:
     volumes:
       - cvfit_postgres_data:/var/lib/postgresql/data
 
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - cvfit_redis_data:/data
+
 volumes:
   cvfit_postgres_data:
+  cvfit_redis_data:

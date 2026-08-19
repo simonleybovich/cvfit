@@ -23,7 +23,7 @@ export async function POST(request: Request) {
   // getCurrentUser() is cache()-wrapped — analyzeCvUseCase's own auth check
   // reuses this same call within the request, no extra Supabase round trip.
   const user = await getCurrentUser();
-  const rateLimit = checkRequestRateLimit(clientIp, user?.id);
+  const rateLimit = await checkRequestRateLimit(clientIp, user?.id);
   if (!rateLimit.allowed) {
     return NextResponse.json(
       { error: "Hiciste demasiadas solicitudes. Esperá un momento antes de volver a intentarlo." },
