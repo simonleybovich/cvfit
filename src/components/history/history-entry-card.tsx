@@ -83,7 +83,11 @@ export function HistoryEntryCard({ entry }: HistoryEntryCardProps) {
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        {deleteError && <p className="text-sm text-destructive">{deleteError}</p>}
+        {deleteError && (
+          <p role="alert" className="text-sm text-destructive">
+            {deleteError}
+          </p>
+        )}
         <div className="flex flex-wrap gap-2">
           <ReuseJdButton jobDescription={entry.jobDescription} />
           <Button

@@ -57,7 +57,7 @@ export function SaveHistoryButton({ jobDescription, result, generatedCv }: SaveH
 
   if (state === "saved") {
     return (
-      <span className="inline-flex items-center gap-1.5 text-sm text-emerald-600">
+      <span role="status" className="inline-flex items-center gap-1.5 text-sm text-emerald-600">
         <Check className="size-4" />
         Guardado en tu historial
       </span>
@@ -71,7 +71,7 @@ export function SaveHistoryButton({ jobDescription, result, generatedCv }: SaveH
         {state === "loading" ? "Guardando..." : "Guardar en mi historial"}
       </Button>
       {error && (
-        <p className="flex items-center gap-1.5 text-sm text-destructive">
+        <p role="alert" className="flex items-center gap-1.5 text-sm text-destructive">
           <TriangleAlert className="size-4" />
           {error}
         </p>

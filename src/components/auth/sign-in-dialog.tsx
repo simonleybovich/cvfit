@@ -129,7 +129,7 @@ export function SignInDialog({ open, onOpenChange }: SignInDialogProps) {
 
         {status === "check-email" ? (
           <div className="flex flex-col items-start gap-3">
-            <p className="flex items-start gap-1.5 text-sm text-muted-foreground">
+            <p role="status" className="flex items-start gap-1.5 text-sm text-muted-foreground">
               <Mail className="mt-0.5 size-4 shrink-0" />
               Te enviamos un email de confirmación a <strong className="font-medium">{email}</strong>.
               Revisá tu email para confirmar tu cuenta antes de iniciar sesión.
@@ -175,7 +175,7 @@ export function SignInDialog({ open, onOpenChange }: SignInDialogProps) {
               </div>
 
               {error && (
-                <p className="flex items-center gap-1.5 text-sm text-destructive">
+                <p role="alert" className="flex items-center gap-1.5 text-sm text-destructive">
                   <TriangleAlert className="size-4 shrink-0" />
                   {error}
                 </p>

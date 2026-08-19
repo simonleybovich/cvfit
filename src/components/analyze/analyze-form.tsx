@@ -34,6 +34,7 @@ interface AnalyzeFormProps {
 
 export function AnalyzeForm({ isSignedIn }: AnalyzeFormProps) {
   const fileInputId = useId();
+  const fileErrorId = useId();
   const jobDescriptionId = useId();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -149,6 +150,8 @@ export function AnalyzeForm({ isSignedIn }: AnalyzeFormProps) {
                 accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                 onChange={handleFileChange}
                 className="hidden"
+                aria-invalid={fileError ? true : undefined}
+                aria-describedby={fileError ? fileErrorId : undefined}
               />
               <div className="flex items-center gap-3">
                 <Button
@@ -169,7 +172,7 @@ export function AnalyzeForm({ isSignedIn }: AnalyzeFormProps) {
                 )}
               </div>
               {fileError && (
-                <p className="flex items-center gap-1.5 text-sm text-destructive">
+                <p id={fileErrorId} role="alert" className="flex items-center gap-1.5 text-sm text-destructive">
                   <TriangleAlert className="size-4" />
                   {fileError}
                 </p>
