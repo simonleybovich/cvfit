@@ -1,4 +1,13 @@
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
+
+/**
+ * Prisma 7 requires an explicit driver adapter for the runtime client (no
+ * more implicit connection off schema.prisma's datasource url — see
+ * prisma.config.ts and prisma/schema.prisma for the CLI/Migrate side of this
+ * same 6->7 upgrade). https://pris.ly/d/prisma7-client-config
+ */
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 
 /**
  * Prisma singleton for the app's own Postgres (historial). Next.js Fast
@@ -9,7 +18,7 @@ import { PrismaClient } from "@prisma/client";
  */
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
-export const prisma = globalForPrisma.prisma ?? new PrismaClient();
+export const prisma = globalForPrisma.prisma ?? new PrismaClient({ adapter });
 
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;

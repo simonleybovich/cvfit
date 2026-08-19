@@ -1,16 +1,14 @@
-// Prisma pinned to the 6.x line rather than the just-released 7.x (see
-// package.json / spec.md deviation note): Prisma 7 makes driver adapters
-// mandatory and is already iterating fast (8.0.0-rc.x published within days
-// of 7.0), which is more churn than this scope needs. 6.x is the last line
-// with the classic engine — connects straight off DATABASE_URL, no adapter
-// package required.
+// Prisma 7 (see prisma.config.ts + spec.md section 6): CLI/Migrate now reads
+// the connection string from prisma.config.ts instead of `env("DATABASE_URL")`
+// here, and the runtime PrismaClient connects through an explicit driver
+// adapter (@prisma/adapter-pg) instead of the schema's datasource url — see
+// src/infrastructure/persistence/postgres/prisma-client.ts.
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // Fase 3 historial (spec.md section 5). Originally scoped as just "JD, score,

@@ -50,7 +50,15 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+# @prisma/adapter-pg is now a runtime dependency (Prisma 7's PrismaClient
+# requires an explicit driver adapter, see prisma-client.ts) rather than a
+# generator-only artifact, but Next's standalone output tracing didn't pick
+# it up at all, and only stubbed a package.json (no index.js) for its
+# top-level postgres-array dependency — copying the full untraced @prisma
+# scope and postgres-array from the builder's node_modules like the .prisma
+# line above fixes both.
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder /app/node_modules/postgres-array ./node_modules/postgres-array
 
 USER nextjs
 

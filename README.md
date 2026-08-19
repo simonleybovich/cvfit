@@ -21,7 +21,8 @@ incluido el CV generado, si lo pediste — en un historial, solo si lo pedís ex
 - `docx` / `pdf-lib` para exportar el CV generado a DOCX/PDF; export a Typst vía templating de
   texto plano (sin librería ni compilación server-side)
 - `@supabase/ssr` + `@supabase/supabase-js` para login con GitHub o Google OAuth (solo identidad)
-- Prisma + Postgres propio (via Docker Compose en local) para el historial de análisis
+- Prisma 7 (`@prisma/adapter-pg` + `prisma.config.ts`) + Postgres propio (via Docker Compose en
+  local) para el historial de análisis
 
 ## Cómo correrlo localmente
 
@@ -46,7 +47,10 @@ incluido el CV generado, si lo pediste — en un historial, solo si lo pedís ex
 
    - `GEMINI_API_KEY`: gratis en [Google AI Studio](https://aistudio.google.com/app/apikey).
    - `DATABASE_URL`: apunta al Postgres local levantado en el paso 3 (valores por defecto del
-     `docker-compose.yml` — no son secrets de producción).
+     `docker-compose.yml` — no son secrets de producción). La leen tanto el Prisma Client en
+     runtime como el CLI de Prisma (`npm run db:*`) vía `prisma.config.ts` en la raíz — a
+     diferencia de Prisma 6, el CLI ya no carga `.env`/`.env.local` automáticamente, por eso
+     `prisma.config.ts` lo hace explícito.
    - `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY`: del dashboard de tu proyecto
      de [Supabase](https://supabase.com) (Settings → API), con los providers de GitHub y/o Google
      habilitados en Authentication → Sign In / Providers (cada uno con su propia OAuth App/Client
@@ -167,6 +171,7 @@ src/
     layout/site-header.tsx        # Header server-side: estado de sesión sin flash
   lib/                            # Rate limiting en memoria, extracción de IP de cliente
 prisma/schema.prisma              # Modelo AnalysisHistory (Postgres propio, no Supabase)
+prisma.config.ts                  # Config del CLI de Prisma 7 (datasource/migrations, lee DATABASE_URL)
 docker-compose.yml                # Postgres local para historial
 middleware.ts                     # Refresca la sesión de Supabase en cada request
 ```
